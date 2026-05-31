@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.obsidian.backup</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/path/to/scripts/backup.py</string>
+        <string>--vault</string>
+        <string>/path/to/your/obsidian/vault</string>
+        <string>--destination</string>
+        <string>/path/to/backups</string>
+        <string>--compress</string>
+        <string>--incremental</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>23</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/obsidian_backup.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/obsidian_backup.err</string>
+</dict>
+</plist>

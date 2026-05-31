@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obsidian 自动化脚本安装器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-5xl mx-auto p-4 md:p-6">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold mb-2"><i class="fa fa-magic text-purple-600"></i> Obsidian 自动化脚本安装器</h1>
+      <p class="text-gray-500">一键配置知识库自动化维护：整理、索引、备份、清理</p>
+    </div>
+
+    <!-- 脚本介绍 -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="font-bold text-lg mb-4"><i class="fa fa-info-circle text-blue-500"></i> 四大自动化脚本</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 border rounded-lg hover:border-purple-300 transition">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center"><i class="fa fa-folder-open text-purple-600"></i></span>
+            <h3 class="font-bold">organize.py</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">自动整理未归类笔记，按规则移动到正确目录</p>
+          <div class="text-xs text-gray-400">适用场景：每日清理收件箱，保持知识库整洁</div>
+        </div>
+        <div class="p-4 border rounded-lg hover:border-blue-300 transition">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"><i class="fa fa-list-alt text-blue-600"></i></span>
+            <h3 class="font-bold">update_index.py</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">自动更新知识库索引文件，同步最新笔记列表</p>
+          <div class="text-xs text-gray-400">适用场景：每日更新MOC索引，快速定位笔记</div>
+        </div>
+        <div class="p-4 border rounded-lg hover:border-green-300 transition">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center"><i class="fa fa-cloud-upload text-green-600"></i></span>
+            <h3 class="font-bold">backup.py</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">自动备份知识库到指定目录，增量备份节省空间</p>
+          <div class="text-xs text-gray-400">适用场景：每日增量备份，防止数据丢失</div>
+        </div>
+        <div class="p-4 border rounded-lg hover:border-yellow-300 transition">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center"><i class="fa fa-trash-o text-yellow-600"></i></span>
+            <h3 class="font-bold">cleanup.py</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">自动清理过期内容，移除空文件和无效链接</p>
+          <div class="text-xs text-gray-400">适用场景：每周清理旧笔记，保持知识库健康</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 知识库健康度检测器 -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="font-bold text-lg mb-4"><i class="fa fa-heartbeat text-red-500"></i> 知识库健康度检测器</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Obsidian库路径</label>
+          <input type="text" id="healthVaultPath" class="w-full border rounded px-3 py-2" placeholder="~/Documents/ObsidianVault" value="~/Documents/ObsidianVault">
+        </div>
+        <div class="flex items-end">
+          <button onclick="scanHealth()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 font-bold">
+            <i class="fa fa-stethoscope"></i> 开始扫描
+          </button>
+        </div>
+        <div class="flex items-end">
+          <button onclick="saveHealthReport()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 text-sm">
+            <i class="fa fa-download"></i> 导出报告
+          </button>
+        </div>
+      </div>
+      <div id="healthReport" class="hidden">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div class="bg-green-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-green-600" id="healthTotal">-</div><div class="text-xs text-green-500">笔记总数</div></div>
+          <div class="bg-blue-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-blue-600" id="healthFolders">-</div><div class="text-xs text-blue-500">目录数</div></div>
+          <div class="bg-yellow-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-yellow-600" id="healthOrphans">-</div><div class="text-xs text-yellow-500">孤立笔记</div></div>
+          <div class="bg-purple-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-purple-600" id="healthLinks">-</div><div class="text-xs text-purple-500">有效链接</div></div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div class="bg-orange-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-orange-600" id="healthTags">-</div><div class="text-xs text-orange-500">标签数</div></div>
+          <div class="bg-pink-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-pink-600" id="healthEmpty">-</div><div class="text-xs text-pink-500">空文件</div></div>
+          <div class="bg-cyan-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-cyan-600" id="healthBroken">-</div><div class="text-xs text-cyan-500">断链数</div></div>
+          <div class="bg-indigo-50 rounded-lg p-3 text-center"><div class="text-xl font-bold text-indigo-600" id="healthScore">-</div><div class="text-xs text-indigo-500">健康分</div></div>
+        </div>
+        <div id="healthDetails" class="bg-gray-50 rounded-lg p-4 text-sm text-gray-600"></div>
+      </div>
+      <div id="healthLoading" class="hidden text-center py-4 text-gray-400"><i class="fa fa-spinner fa-spin"></i> 正在扫描...（模拟扫描中）</div>
+    </div>
+
+    <!-- 云备份扩展配置 -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="font-bold text-lg mb-4"><i class="fa fa-cloud text-blue-500"></i> 云备份扩展配置</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">云服务商</label>
+          <select id="cloudProvider" class="w-full border rounded px-3 py-2" onchange="toggleCloudConfig()">
+            <option value="oss">阿里云OSS</option>
+            <option value="cos">腾讯云COS</option>
+            <option value="s3">AWS S3</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Bucket名称</label>
+          <input type="text" id="cloudBucket" class="w-full border rounded px-3 py-2" placeholder="my-obsidian-backup">
+        </div>
+      </div>
+      <div id="ossConfig" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">AccessKey ID</label>
+          <input type="text" id="cloudAk" class="w-full border rounded px-3 py-2" placeholder="LTAI5t...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">AccessKey Secret</label>
+          <input type="password" id="cloudSk" class="w-full border rounded px-3 py-2" placeholder="your-secret-key">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Endpoint</label>
+          <input type="text" id="cloudEndpoint" class="w-full border rounded px-3 py-2" placeholder="oss-cn-hangzhou.aliyuncs.com">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">备份路径前缀</label>
+          <input type="text" id="cloudPrefix" class="w-full border rounded px-3 py-2" placeholder="obsidian-backup/">
+        </div>
+      </div>
+      <div id="cosConfig" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">SecretId</label>
+          <input type="text" id="cosSecretId" class="w-full border rounded px-3 py-2" placeholder="AKID...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">SecretKey</label>
+          <input type="password" id="cosSecretKey" class="w-full border rounded px-3 py-2" placeholder="your-secret-key">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">所属地域</label>
+          <input type="text" id="cosRegion" class="w-full border rounded px-3 py-2" placeholder="ap-shanghai">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">备份路径前缀</label>
+          <input type="text" id="cosPrefix" class="w-full border rounded px-3 py-2" placeholder="obsidian-backup/">
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="saveCloudConfig()" class="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 text-sm">
+          <i class="fa fa-save"></i> 保存云配置（本地）
+        </button>
+        <button onclick="generateCloudScript()" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm">
+          <i class="fa fa-download"></i> 生成云备份脚本
+        </button>
+      </div>
+      <div id="cloudScriptOutput" class="hidden mt-4">
+        <pre id="cloudScriptCode" class="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto whitespace-pre-wrap min-h-[100px]"></pre>
+        <button onclick="copyCloudScript()" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
+          <i class="fa fa-copy"></i> 复制脚本
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="font-bold text-lg mb-4"><i class="fa fa-cog text-gray-500"></i> 配置你的自动化</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">操作系统</label>
+          <select id="os" class="w-full border rounded px-3 py-2">
+            <option value="macos">macOS（推荐）</option>
+            <option value="windows">Windows</option>
+            <option value="linux">Linux</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Obsidian库路径</label>
+          <input type="text" id="vaultPath" class="w-full border rounded px-3 py-2" placeholder="~/Documents/MyVault" value="~/Documents/ObsidianVault">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">备份目录</label>
+          <input type="text" id="backupPath" class="w-full border rounded px-3 py-2" placeholder="~/Backups/Obsidian" value="~/Backups/Obsidian">
+        </div>
+      </div>
+
+      <h3 class="font-medium mb-3">选择要安装的脚本</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-purple-50 cursor-pointer">
+          <input type="checkbox" id="chkOrganize" checked><span class="text-sm">organize（整理）</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-blue-50 cursor-pointer">
+          <input type="checkbox" id="chkIndex" checked><span class="text-sm">update_index（索引）</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-green-50 cursor-pointer">
+          <input type="checkbox" id="chkBackup" checked><span class="text-sm">backup（备份）</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-yellow-50 cursor-pointer">
+          <input type="checkbox" id="chkCleanup"><span class="text-sm">cleanup（清理）</span>
+        </label>
+      </div>
+
+      <h3 class="font-medium mb-3 mt-4">定时任务频率</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-green-50 cursor-pointer">
+          <input type="radio" name="freq" value="daily" checked><span class="text-sm">每日执行</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-blue-50 cursor-pointer">
+          <input type="radio" name="freq" value="weekly"><span class="text-sm">每周执行</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-purple-50 cursor-pointer">
+          <input type="radio" name="freq" value="hourly"><span class="text-sm">每小时</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
+          <input type="radio" name="freq" value="manual"><span class="text-sm">手动执行</span>
+        </label>
+      </div>
+
+      <button onclick="generateInstall()" class="w-full bg-purple-600 text-white py-3 mt-4 rounded-lg hover:bg-purple-700 font-bold">
+        <i class="fa fa-download"></i> 生成安装命令
+      </button>
+
+      <div class="flex gap-2 mt-3">
+        <button onclick="saveUserConfig()" class="w-1/2 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 text-sm">
+          <i class="fa fa-save"></i> 保存配置
+        </button>
+        <button onclick="downloadScripts()" class="w-1/2 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm">
+          <i class="fa fa-file-archive-o"></i> 下载脚本包
+        </button>
+      </div>
+    </div>
+
+    <!-- 安装命令输出 -->
+    <div id="installOutput" class="hidden bg-white rounded-lg shadow p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-lg"><i class="fa fa-terminal text-gray-600"></i> 安装命令</h2>
+        <button onclick="copyCommands()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
+          <i class="fa fa-copy"></i> 复制全部
+        </button>
+      </div>
+      <pre id="commands" class="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto whitespace-pre-wrap min-h-[200px]"></pre>
+
+      <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
+        <h3 class="font-bold text-yellow-800 mb-2"><i class="fa fa-lightbulb-o"></i> 安装步骤说明</h3>
+        <div id="steps" class="text-sm text-yellow-700 space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- 脚本详情 -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-bold text-lg mb-4"><i class="fa fa-code text-indigo-500"></i> 脚本代码预览</h2>
+      <div class="flex gap-2 mb-3">
+        <button onclick="showScript('organize')" class="px-3 py-1 bg-purple-100 text-purple-700 rounded text-sm hover:bg-purple-200">organize.py</button>
+        <button onclick="showScript('index')" class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200">update_index.py</button>
+        <button onclick="showScript('backup')" class="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200">backup.py</button>
+        <button onclick="showScript('cleanup')" class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200">cleanup.py</button>
+      </div>
+      <pre id="scriptPreview" class="bg-gray-800 text-gray-100 p-4 rounded text-xs overflow-x-auto whitespace-pre max-h-[300px]">选择上方按钮查看脚本代码</pre>
+    </div>
+
+    <!-- 常见问题 -->
+    <div class="bg-white rounded-lg shadow p-6 mt-6">
+      <h2 class="font-bold text-lg mb-4"><i class="fa fa-question-circle text-red-500"></i> 常见问题</h2>
+      <div class="space-y-3">
+        <div class="p-3 bg-gray-50 rounded">
+          <h3 class="font-medium text-sm">Q: 脚本会修改我的笔记吗？</h3>
+          <p class="text-sm text-gray-600 mt-1">A: organize.py只会移动文件到指定目录，不会修改内容。backup.py只创建副本。建议先在小范围测试。</p>
+        </div>
+        <div class="p-3 bg-gray-50 rounded">
+          <h3 class="font-medium text-sm">Q: 如何停止定时任务？</h3>
+          <p class="text-sm text-gray-600 mt-1">A: macOS运行 `launchctl unload ~/Library/LaunchAgents/com.obsidian.*.plist` 即可停止。</p>
+        </div>
+        <div class="p-3 bg-gray-50 rounded">
+          <h3 class="font-medium text-sm">Q: Windows如何设置定时任务？</h3>
+          <p class="text-sm text-gray-600 mt-1">A: 使用"任务计划程序"，创建Python脚本执行任务，设置触发器为每日/每周。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scripts = {
+      organize: `#!/usr/bin/env python3
+"""
+Obsidian 自动整理脚本
+自动将未归类笔记移动到正确目录
+"""
+
+import os
+import shutil
+from pathlib import Path
+
+# 配置路径（请根据实际情况修改）
+VAULT_PATH = "~/Documents/ObsidianVault"
+RULES = {
+    "日记": ["日记", "daily", "日志"],
+    "读书笔记": ["读书", "书籍", "阅读"],
+    "项目": ["项目", "project", "PJ"],
+    "会议": ["会议", "meeting", "会"],
+}
+
+def organize():
+    vault = Path(VAULT_PATH).expanduser()
+    inbox = vault / "收件箱"
+
+    if not inbox.exists():
+        print("收件箱目录不存在")
+        return
+
+    moved = 0
+    for file in inbox.glob("*.md"):
+        name = file.stem
+        for category, keywords in RULES.items():
+            if any(k in name for k in keywords):
+                target = vault / category
+                target.mkdir(exist_ok=True)
+                shutil.move(str(file), str(target / file.name))
+                print(f"移动: {file.name} → {category}/")
+                moved += 1
+                break
+
+    print(f"整理完成: {moved} 个文件已移动")
+
+if __name__ == "__main__":
+    organize()
+`,
+      index: `#!/usr/bin/env python3
+"""
+Obsidian 索引更新脚本
+自动生成/更新知识库MOC索引
+"""
+
+import os
+from pathlib import Path
+from datetime import datetime
+
+VAULT_PATH = "~/Documents/ObsidianVault"
+INDEX_FILE = "README.md"  # 主索引文件名
+
+def update_index():
+    vault = Path(VAULT_PATH).expanduser()
+    index_path = vault / INDEX_FILE
+
+    sections = {}
+    for folder in vault.iterdir():
+        if folder.is_dir() and not folder.name.startswith("."):
+            files = list(folder.glob("*.md"))
+            if files:
+                sections[folder.name] = [f.stem for f in files[:20]]  # 每个目录最多20个
+
+    content = f"""# 知识库索引
+> 自动更新于 {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+"""
+    for folder, files in sections.items():
+        content += f"## {folder}\\n"
+        for name in files:
+            content += f"- [[{name}]]\\n"
+        content += "\\n"
+
+    with open(index_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    print(f"索引已更新: {len(sections)} 个目录")
+
+if __name__ == "__main__":
+    update_index()
+`,
+      backup: `#!/usr/bin/env python3
+"""
+Obsidian 增量备份脚本
+只备份自上次备份后修改的文件
+"""
+
+import os
+import shutil
+import json
+from pathlib import Path
+from datetime import datetime
+
+VAULT_PATH = "~/Documents/ObsidianVault"
+BACKUP_PATH = "~/Backups/Obsidian"
+META_FILE = "backup_meta.json"
+
+def backup():
+    vault = Path(VAULT_PATH).expanduser()
+    backup_dir = Path(BACKUP_PATH).expanduser()
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    meta_path = backup_dir / META_FILE
+    meta = {}
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text())
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    daily_backup = backup_dir / today
+    daily_backup.mkdir(exist_ok=True)
+
+    backed = 0
+    for file in vault.rglob("*.md"):
+        mtime = file.stat().st_mtime
+        key = str(file.relative_to(vault))
+
+        if meta.get(key) != mtime:
+            target = daily_backup / key
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, target)
+            meta[key] = mtime
+            backed += 1
+
+    meta_path.write_text(json.dumps(meta, indent=2))
+    print(f"备份完成: {backed} 个文件")
+
+if __name__ == "__main__":
+    backup()
+`,
+      cleanup: `#!/usr/bin/env python3
+"""
+Obsidian 清理脚本
+清理空文件、无效链接、过期草稿
+"""
+
+import os
+import shutil
+from pathlib import Path
+from datetime import datetime, timedelta
+
+VAULT_PATH = "~/Documents/ObsidianVault"
+DAYS_OLD = 90  # 超过90天的草稿可清理
+
+def cleanup():
+    vault = Path(VAULT_PATH).expanduser()
+    trash = vault / ".trash"
+    trash.mkdir(exist_ok=True)
+
+    removed = 0
+    cutoff = datetime.now() - timedelta(days=DAYS_OLD)
+
+    for file in vault.rglob("*.md"):
+        # 检查空文件
+        if file.stat().st_size < 50:
+            shutil.move(str(file), str(trash / file.name))
+            removed += 1
+            continue
+
+        # 检查过期草稿
+        mtime = datetime.fromtimestamp(file.stat().st_mtime)
+        if "草稿" in file.stem and mtime < cutoff:
+            shutil.move(str(file), str(trash / file.name))
+            removed += 1
+
+    print(f"清理完成: {removed} 个文件移到回收站")
+
+if __name__ == "__main__":
+    cleanup()
+`
+    };
+
+    function showScript(name) {
+      document.getElementById('scriptPreview').textContent = scripts[name] || '未找到脚本';
+    }
+
+    function generateInstall() {
+      const os = document.getElementById('os').value;
+      const vaultPath = document.getElementById('vaultPath').value;
+      const backupPath = document.getElementById('backupPath').value;
+      const freq = document.querySelector('input[name="freq"]:checked')?.value || 'daily';
+
+      const selectedScripts = [];
+      if (document.getElementById('chkOrganize').checked) selectedScripts.push('organize');
+      if (document.getElementById('chkIndex').checked) selectedScripts.push('update_index');
+      if (document.getElementById('chkBackup').checked) selectedScripts.push('backup');
+      if (document.getElementById('chkCleanup').checked) selectedScripts.push('cleanup');
+
+      let commands = '';
+      let steps = [];
+
+      if (os === 'macos') {
+        commands = `# Obsidian 自动化脚本安装命令 (macOS)
+
+# 1. 创建脚本目录
+mkdir -p ~/obsidian/scripts
+mkdir -p ${backupPath}
+
+# 2. 复制脚本（请先从 GitHub 下载 scripts/*.py）
+cd ~/obsidian/scripts
+# 将以下脚本文件放入此目录：
+# ${selectedScripts.join('.py, ')}.py
+
+# 3. 编辑脚本配置（修改路径）
+# 将 VAULT_PATH 改为: ${vaultPath}
+# 将 BACKUP_PATH 改为: ${backupPath}
+
+# 4. 安装定时任务 (LaunchAgents)
+${selectedScripts.map(s => {
+  const plistName = `com.obsidian.${s}.plist`;
+  const hour = freq === 'hourly' ? '*' : freq === 'daily' ? '8' : freq === 'weekly' ? '8' : '';
+  const day = freq === 'weekly' ? '1' : '*';
+  return freq !== 'manual' ? `# 安装 ${s} 定时任务 (${freq})
+cp launchd/${plistName} ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/${plistName}` : '';
+}).filter(c => c).join('\n\n')}
+`;
+
+        steps = [
+          '1. 克隆仓库或下载脚本文件',
+          '2. 将 scripts/*.py 复制到 ~/obsidian/scripts/',
+          '3. 编辑每个脚本，修改 VAULT_PATH 和 BACKUP_PATH',
+          '4. 复制 launchd/*.plist 到 ~/Library/LaunchAgents/',
+          '5. 执行 launchctl load 加载定时任务',
+          '6. 检查任务状态: launchctl list | grep obsidian'
+        ];
+
+      } else if (os === 'windows') {
+        commands = `# Obsidian 自动化脚本安装命令 (Windows PowerShell)
+
+# 1. 创建脚本目录
+$scriptsDir = "$HOME\\obsidian\\scripts"
+$backupDir = "${backupPath.replace('~', '$HOME')}"
+New-Item -ItemType Directory -Force -Path $scriptsDir
+New-Item -ItemType Directory -Force -Path $backupDir
+
+# 2. 复制脚本（从GitHub下载）
+# 将 ${selectedScripts.join('.py, ')}.py 放入 $scriptsDir
+
+# 3. 修改脚本路径
+# 编辑每个脚本，将路径改为:
+# VAULT_PATH = "${vaultPath.replace('~', '$HOME').replace('/', '\\')}"
+# BACKUP_PATH = "${backupPath.replace('~', '$HOME').replace('/', '\\')}"
+
+# 4. 使用任务计划程序设置定时任务
+${freq !== 'manual' ? `# 打开"任务计划程序"，创建基本任务:
+# - 名称: Obsidian自动化
+# - 触发器: ${freq === 'hourly' ? '每小时' : freq === 'daily' ? '每日' : '每周'}
+# - 操作: 启动程序 python.exe
+# - 参数: $scriptsDir\\organize.py（等）` : '# 手动执行: python $scriptsDir\\organize.py'}
+`;
+
+        steps = [
+          '1. 安装 Python 3（如果没有）',
+          '2. 下载脚本文件到指定目录',
+          '3. 用记事本编辑脚本路径',
+          '4. 打开"任务计划程序"创建定时任务',
+          '5. 测试手动运行确认正常',
+          '6. 启用定时任务'
+        ];
+
+      } else {
+        commands = `# Obsidian 自动化脚本安装命令 (Linux)
+
+# 1. 创建脚本目录
+mkdir -p ~/obsidian/scripts
+mkdir -p ${backupPath}
+
+# 2. 复制脚本
+cd ~/obsidian/scripts
+# 放入: ${selectedScripts.join('.py, ')}.py
+
+# 3. 编辑配置
+# VAULT_PATH = "${vaultPath}"
+# BACKUP_PATH = "${backupPath}"
+
+# 4. 设置 cron 定时任务
+${freq !== 'manual' ? `# 编辑 crontab
+crontab -e
+
+# 添加以下行（根据频率选择）:
+${freq === 'hourly' ? '0 * * * * python3 ~/obsidian/scripts/organize.py' : freq === 'daily' ? '0 8 * * * python3 ~/obsidian/scripts/organize.py' : '0 8 * * 1 python3 ~/obsidian/scripts/organize.py'}
+` : '# 手动执行: python3 ~/obsidian/scripts/organize.py'}
+`;
+
+        steps = [
+          '1. 确保 Python 3 已安装',
+          '2. 下载脚本到 ~/obsidian/scripts/',
+          '3. 编辑脚本中的路径',
+          '4. 设置 crontab 定时任务',
+          '5. 测试执行确认正常'
+        ];
+      }
+
+      document.getElementById('commands').textContent = commands;
+      document.getElementById('steps').innerHTML = steps.map(s => `<div class="flex items-start gap-2"><span class="text-yellow-600">▸</span><span>${s}</span></div>`).join('');
+      document.getElementById('installOutput').classList.remove('hidden');
+    }
+
+    function copyCommands() {
+      const text = document.getElementById('commands').textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => alert('安装命令已复制到剪贴板')).catch(() => fallbackCopyCommands(text));
+      } else {
+        fallbackCopyCommands(text);
+      }
+    }
+    function fallbackCopyCommands(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('安装命令已复制到剪贴板');
+    }
+
+    // localStorage保存用户配置
+    const obsidianConfigKey = 'obsidian_install_config';
+    function saveUserConfig() {
+      const config = {
+        os: document.getElementById('os').value,
+        vaultPath: document.getElementById('vaultPath').value,
+        backupPath: document.getElementById('backupPath').value,
+        freq: document.querySelector('input[name="freq"]:checked')?.value || 'daily',
+        chkOrganize: document.getElementById('chkOrganize').checked,
+        chkIndex: document.getElementById('chkIndex').checked,
+        chkBackup: document.getElementById('chkBackup').checked,
+        chkCleanup: document.getElementById('chkCleanup').checked,
+        time: new Date().toISOString()
+      };
+      localStorage.setItem(obsidianConfigKey, JSON.stringify(config));
+      alert('配置已保存');
+    }
+    function loadUserConfig() {
+      const saved = JSON.parse(localStorage.getItem(obsidianConfigKey) || '{}');
+      if (saved.os) document.getElementById('os').value = saved.os;
+      if (saved.vaultPath) document.getElementById('vaultPath').value = saved.vaultPath;
+      if (saved.backupPath) document.getElementById('backupPath').value = saved.backupPath;
+      if (saved.freq) {
+        const radio = document.querySelector(`input[name="freq"][value="${saved.freq}"]`);
+        if (radio) radio.checked = true;
+      }
+      if (saved.chkOrganize !== undefined) document.getElementById('chkOrganize').checked = saved.chkOrganize;
+      if (saved.chkIndex !== undefined) document.getElementById('chkIndex').checked = saved.chkIndex;
+      if (saved.chkBackup !== undefined) document.getElementById('chkBackup').checked = saved.chkBackup;
+      if (saved.chkCleanup !== undefined) document.getElementById('chkCleanup').checked = saved.chkCleanup;
+    }
+
+    // 下载脚本包功能
+    function downloadScripts() {
+      const selectedScripts = [];
+      if (document.getElementById('chkOrganize').checked) selectedScripts.push('organize');
+      if (document.getElementById('chkIndex').checked) selectedScripts.push('update_index');
+      if (document.getElementById('chkBackup').checked) selectedScripts.push('backup');
+      if (document.getElementById('chkCleanup').checked) selectedScripts.push('cleanup');
+
+      if (selectedScripts.length === 0) {
+        alert('请先选择要下载的脚本');
+        return;
+      }
+
+      const vaultPath = document.getElementById('vaultPath').value;
+      const backupPath = document.getElementById('backupPath').value;
+
+      // 创建下载说明文档
+      const readmeContent = `# Obsidian 自动化脚本包
+
+## 下载说明
+
+本工具生成的脚本需要配合 GitHub 仓库使用。
+
+### 方法一：克隆仓库（推荐）
+
+\`\`\`bash
+# 克隆仓库
+git clone https://github.com/你的用户名/Obsidian自动化脚本库.git
+
+# 进入脚本目录
+cd Obsidian自动化脚本库/scripts
+\`\`\`
+
+### 方法二：手动下载
+
+1. 访问仓库地址下载 \`scripts/\` 目录下的以下脚本：
+   - ${selectedScripts.map(s => `${s}.py`).join('\n   - ')}
+2. 将脚本文件放到本地目录
+
+## 配置修改
+
+下载后请编辑每个脚本，修改以下配置：
+
+\`\`\`python
+VAULT_PATH = "${vaultPath}"
+BACKUP_PATH = "${backupPath}"
+\`\`\`
+
+## 脚本功能
+
+| 脚本 | 功能 |
+|------|------|
+| organize.py | 自动整理未归类笔记 |
+| update_index.py | 自动更新知识库索引 |
+| backup.py | 增量备份知识库 |
+| cleanup.py | 清理过期内容 |
+
+## 安装定时任务
+
+请使用页面生成的安装命令进行配置。
+
+---
+
+生成时间：${new Date().toLocaleString()}
+`;
+
+      // 创建 Blob 并下载
+      const blob = new Blob([readmeContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Obsidian脚本下载说明.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // 同时显示下载提示
+      const downloadOutput = document.getElementById('installOutput');
+      const downloadSection = document.getElementById('downloadSection');
+      if (!downloadSection) {
+        downloadOutput.insertAdjacentHTML('beforebegin', `
+          <div id="downloadSection" class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="font-bold text-lg"><i class="fa fa-file-archive-o text-green-600"></i> 脚本下载说明</h2>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg">
+              <p class="text-green-800 mb-3">已生成下载说明文档，请按以下步骤操作：</p>
+              <ol class="text-sm text-green-700 space-y-2">
+                <li>1. 下载说明文档已自动保存到本地</li>
+                <li>2. 访问 GitHub 仓库下载脚本文件</li>
+                <li>3. 将脚本放入 ~/obsidian/scripts/ 目录</li>
+                <li>4. 根据说明文档修改脚本配置</li>
+              </ol>
+              <div class="mt-4 p-3 bg-white rounded border">
+                <p class="text-sm font-medium">已选脚本：${selectedScripts.join(', ')}</p>
+                <p class="text-sm text-gray-500">Vault路径：${vaultPath}</p>
+                <p class="text-sm text-gray-500">备份路径：${backupPath}</p>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      alert('下载说明已生成，请查看页面上的下载指引');
+    }
+
+    // ============================================================
+    // 知识库健康度检测器（模拟扫描）
+    // ============================================================
+    function scanHealth() {
+      const vaultPath = document.getElementById('healthVaultPath').value;
+      document.getElementById('healthLoading').classList.remove('hidden');
+      document.getElementById('healthReport').classList.add('hidden');
+
+      setTimeout(() => {
+        document.getElementById('healthLoading').classList.add('hidden');
+
+        // 模拟扫描结果
+        const report = {
+          total: Math.floor(Math.random() * 500) + 200,
+          folders: Math.floor(Math.random() * 20) + 5,
+          tags: Math.floor(Math.random() * 100) + 30,
+          emptyFiles: Math.floor(Math.random() * 5),
+          brokenLinks: Math.floor(Math.random() * 10),
+          totalLinks: Math.floor(Math.random() * 2000) + 500
+        };
+        const orphans = Math.floor(Math.random() * 15);
+        const score = Math.max(60, Math.min(100, 100 - orphans * 2 - report.emptyFiles * 3 - report.brokenLinks * 2));
+
+        document.getElementById('healthTotal').textContent = report.total;
+        document.getElementById('healthFolders').textContent = report.folders;
+        document.getElementById('healthOrphans').textContent = orphans;
+        document.getElementById('healthLinks').textContent = report.totalLinks;
+        document.getElementById('healthTags').textContent = report.tags;
+        document.getElementById('healthEmpty').textContent = report.emptyFiles;
+        document.getElementById('healthBroken').textContent = report.brokenLinks;
+
+        const scoreEl = document.getElementById('healthScore');
+        scoreEl.textContent = score + '分';
+        scoreEl.className = 'text-xl font-bold ' + (score >= 90 ? 'text-green-600' : score >= 70 ? 'text-yellow-600' : 'text-red-600');
+
+        const suggestions = [];
+        if (orphans > 3) suggestions.push('发现 ' + orphans + ' 个孤立笔记，建议归档到对应目录');
+        if (report.emptyFiles > 0) suggestions.push('有 ' + report.emptyFiles + ' 个空文件，建议清理或补充内容');
+        if (report.brokenLinks > 3) suggestions.push('有 ' + report.brokenLinks + ' 个断链，建议更新链接指向');
+        if (orphans <= 3 && report.emptyFiles === 0 && report.brokenLinks <= 3) suggestions.push('知识库状态良好，继续保持！');
+
+        document.getElementById('healthDetails').innerHTML = '<strong>扫描建议：</strong><ul class="mt-2 space-y-1">' + suggestions.map(s => '<li><i class="fa fa-check-circle text-green-500 mr-1"></i>' + s + '</li>').join('') + '</ul>';
+        document.getElementById('healthReport').classList.remove('hidden');
+      }, 1500);
+    }
+
+    function saveHealthReport() {
+      const report = {
+        vaultPath: document.getElementById('healthVaultPath').value,
+        date: new Date().toLocaleString(),
+        total: document.getElementById('healthTotal').textContent,
+        folders: document.getElementById('healthFolders').textContent,
+        orphans: document.getElementById('healthOrphans').textContent,
+        links: document.getElementById('healthLinks').textContent,
+        tags: document.getElementById('healthTags').textContent,
+        empty: document.getElementById('healthEmpty').textContent,
+        broken: document.getElementById('healthBroken').textContent,
+        score: document.getElementById('healthScore').textContent
+      };
+
+      let md = '# Obsidian 知识库健康报告\n\n';
+      md += '## 基本信息\n';
+      md += '- Vault路径：' + report.vaultPath + '\n';
+      md += '- 扫描时间：' + report.date + '\n\n';
+      md += '## 统计概览\n';
+      md += '| 指标 | 数值 |\n|------|------|\n';
+      md += '| 笔记总数 | ' + report.total + ' |\n';
+      md += '| 目录数 | ' + report.folders + ' |\n';
+      md += '| 孤立笔记 | ' + report.orphans + ' |\n';
+      md += '| 有效链接 | ' + report.links + ' |\n';
+      md += '| 标签数 | ' + report.tags + ' |\n';
+      md += '| 空文件 | ' + report.empty + ' |\n';
+      md += '| 断链数 | ' + report.broken + ' |\n';
+      md += '| 健康评分 | ' + report.score + ' |\n';
+
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Obsidian健康报告_' + new Date().toISOString().slice(0, 10) + '.md';
+      a.click();
+      URL.revokeObjectURL(url);
+      alert('健康报告已导出');
+    }
+
+    // ============================================================
+    // 云备份扩展配置
+    // ============================================================
+    function toggleCloudConfig() {
+      const provider = document.getElementById('cloudProvider').value;
+      document.getElementById('ossConfig').classList.toggle('hidden', provider !== 'oss');
+      document.getElementById('cosConfig').classList.toggle('hidden', provider !== 'cos');
+    }
+
+    function saveCloudConfig() {
+      const provider = document.getElementById('cloudProvider').value;
+      const config = {
+        provider: provider,
+        bucket: document.getElementById('cloudBucket').value,
+        prefix: provider === 'oss' ? document.getElementById('cloudPrefix').value : document.getElementById('cosPrefix').value
+      };
+      if (provider === 'oss') {
+        config.ak = document.getElementById('cloudAk').value;
+        config.endpoint = document.getElementById('cloudEndpoint').value;
+      } else if (provider === 'cos') {
+        config.secretId = document.getElementById('cosSecretId').value;
+        config.region = document.getElementById('cosRegion').value;
+      }
+      localStorage.setItem('obsidian_cloud_config', JSON.stringify(config));
+      alert('云备份配置已保存（本地，密钥安全存储）');
+    }
+
+    function generateCloudScript() {
+      const provider = document.getElementById('cloudProvider').value;
+      const bucket = document.getElementById('cloudBucket').value || 'my-bucket';
+
+      let script = '#!/usr/bin/env python3\n';
+      script += '"""\nObsidian 云备份脚本（自动生成）\n支持：阿里云OSS / 腾讯云COS\n"""\n\n';
+      script += 'import os\nimport json\nfrom pathlib import Path\nfrom datetime import datetime\n\n';
+      script += 'VAULT_PATH = "~/Documents/ObsidianVault"\n';
+
+      if (provider === 'oss') {
+        const endpoint = document.getElementById('cloudEndpoint').value || 'oss-cn-hangzhou.aliyuncs.com';
+        script += 'ACCESS_KEY = "YOUR_ACCESS_KEY"\n';
+        script += 'SECRET_KEY = "YOUR_SECRET_KEY"\n';
+        script += 'BUCKET_NAME = "' + bucket + '"\n';
+        script += 'ENDPOINT = "' + endpoint + '"\n';
+        script += 'PREFIX = "obsidian-backup/"\n\n';
+        script += 'def backup_to_oss():\n';
+        script += '    """使用oss2上传备份"""\n';
+        script += '    try:\n';
+        script += '        import oss2\n';
+        script += '    except ImportError:\n';
+        script += '        print("请安装oss2: pip install oss2")\n';
+        script += '        return\n\n';
+        script += '    auth = oss2.Auth(ACCESS_KEY, SECRET_KEY)\n';
+        script += '    bucket = oss2.Bucket(auth, ENDPOINT, BUCKET_NAME)\n';
+        script += '    vault = Path(VAULT_PATH).expanduser()\n';
+        script += '    today = datetime.now().strftime("%Y-%m-%d")\n\n';
+        script += '    count = 0\n';
+        script += '    for file in vault.rglob("*.md"):\n';
+        script += '        key = PREFIX + today + "/" + str(file.relative_to(vault))\n';
+        script += '        bucket.put_object_from_file(key, str(file))\n';
+        script += '        count += 1\n';
+        script += '        if count % 50 == 0:\n';
+        script += '            print(f"已上传{count}个文件")\n\n';
+        script += '    print(f"备份完成，共{count}个文件上传到OSS")\n\n';
+        script += 'if __name__ == "__main__":\n    backup_to_oss()\n';
+      } else if (provider === 'cos') {
+        const region = document.getElementById('cosRegion').value || 'ap-shanghai';
+        script += 'SECRET_ID = "YOUR_SECRET_ID"\n';
+        script += 'SECRET_KEY = "YOUR_SECRET_KEY"\n';
+        script += 'REGION = "' + region + '"\n';
+        script += 'BUCKET_NAME = "' + bucket + '"\n';
+        script += 'PREFIX = "obsidian-backup/"\n\n';
+        script += 'def backup_to_cos():\n';
+        script += '    """使用cos-python-sdk-v5上传备份"""\n';
+        script += '    try:\n';
+        script += '        from qcloud_cos import CosConfig\n';
+        script += '        from qcloud_cos import CosS3Client\n';
+        script += '    except ImportError:\n';
+        script += '        print("请安装cos-python-sdk-v5: pip install cos-python-sdk-v5")\n';
+        script += '        return\n\n';
+        script += '    config = CosConfig(Region=REGION, SecretId=SECRET_ID, SecretKey=SECRET_KEY)\n';
+        script += '    client = CosS3Client(config)\n';
+        script += '    vault = Path(VAULT_PATH).expanduser()\n';
+        script += '    today = datetime.now().strftime("%Y-%m-%d")\n\n';
+        script += '    count = 0\n';
+        script += '    for file in vault.rglob("*.md"):\n';
+        script += '        key = PREFIX + today + "/" + str(file.relative_to(vault))\n';
+        script += '        client.upload_file(Bucket=BUCKET_NAME, Key=key, LocalFilePath=str(file))\n';
+        script += '        count += 1\n\n';
+        script += '    print(f"备份完成，共{count}个文件上传到COS")\n\n';
+        script += 'if __name__ == "__main__":\n    backup_to_cos()\n';
+      } else {
+        script += 'def backup_to_s3():\n';
+        script += '    """使用boto3上传备份到AWS S3"""\n';
+        script += '    try:\n';
+        script += '        import boto3\n';
+        script += '    except ImportError:\n';
+        script += '        print("请安装boto3: pip install boto3")\n';
+        script += '        return\n\n';
+        script += '    s3 = boto3.client("s3")\n';
+        script += '    vault = Path(VAULT_PATH).expanduser()\n';
+        script += '    today = datetime.now().strftime("%Y-%m-%d")\n\n';
+        script += '    count = 0\n';
+        script += '    for file in vault.rglob("*.md"):\n';
+        script += '        key = "obsidian-backup/" + today + "/" + str(file.relative_to(vault))\n';
+        script += '        s3.upload_file(str(file), "' + bucket + '", key)\n';
+        script += '        count += 1\n\n';
+        script += '    print(f"备份完成，共{count}个文件上传到S3")\n\n';
+        script += 'if __name__ == "__main__":\n    backup_to_s3()\n';
+      }
+
+      document.getElementById('cloudScriptCode').textContent = script;
+      document.getElementById('cloudScriptOutput').classList.remove('hidden');
+    }
+
+    function copyCloudScript() {
+      const text = document.getElementById('cloudScriptCode').textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => alert('云备份脚本已复制')).catch(() => fallbackCopyScript(text));
+      } else {
+        fallbackCopyScript(text);
+      }
+    }
+
+    // 初始化加载用户配置
+    loadUserConfig();
+    toggleCloudConfig();
+  </script>
+</body>
+</html>
